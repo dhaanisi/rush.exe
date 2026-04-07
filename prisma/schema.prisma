@@ -1,0 +1,40 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+enum Difficulty {
+    EASY
+    MEDIUM
+    HARD
+}
+
+model Player {
+    id         String      @id @default(cuid())
+    username   String      @unique @db.VarChar(32)
+    bestScore  Int         @default(0)
+    createdAt  DateTime    @default(now())
+    updatedAt  DateTime    @updatedAt
+    gameScores GameScore[]
+
+    @@index([bestScore(sort: Desc)])
+}
+
+model GameScore {
+    id         String     @id @default(cuid())
+    playerId   String
+    score      Int
+    difficulty Difficulty
+    maxCombo   Int
+    createdAt  DateTime   @default(now())
+
+    player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+    @@index([playerId, score(sort: Desc)])
+    @@index([score(sort: Desc), createdAt(sort: Desc)])
+    @@index([difficulty, score(sort: Desc), createdAt(sort: Desc)])
+    @@index([playerId, createdAt(sort: Desc)])
+}

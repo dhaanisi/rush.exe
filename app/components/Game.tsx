@@ -94,6 +94,8 @@ export default function Game() {
     const [scorePops, setScorePops] = useState<ScorePop[]>([]);
     const [warning, setWarning] = useState<string | null>(null);
     const [isInputError, setIsInputError] = useState(false);
+    const [username, setUsername] = useState("");
+    const [usernameError, setUsernameError] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const gameOverRef = useRef(false);
@@ -107,6 +109,10 @@ export default function Game() {
 
     /* ── Start / Restart ───────────────────────── */
     const startGame = useCallback((diff: Difficulty) => {
+        if (!username.trim()) {
+            setUsernameError(true);
+            return;
+        }
         setDifficulty(diff);
         setScore(0);
         setLives(3);
@@ -123,7 +129,7 @@ export default function Game() {
         setScorePops([]);
         setWarning(null);
         setTimeout(() => inputRef.current?.focus(), 100);
-    }, []);
+    }, [username]);
 
     /* ── Back to Home ──────────────────────────── */
     const goHome = useCallback(() => {
@@ -149,6 +155,31 @@ export default function Game() {
         setGameOver(true);
         setIsPaused(false);
     }, []);
+
+    /* ── Report Score ──────────────────────────── */
+    const reportScore = useCallback(async () => {
+        if (!username || score === 0) return;
+        try {
+            await fetch("/api/score", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username,
+                    score,
+                    difficulty: (difficulty || tempDifficulty).toUpperCase(),
+                    maxCombo,
+                }),
+            });
+        } catch (err) {
+            console.error("Failed to report score:", err);
+        }
+    }, [username, score, difficulty, tempDifficulty, maxCombo]);
+
+    useEffect(() => {
+        if (gameOver) {
+            reportScore();
+        }
+    }, [gameOver, reportScore]);
 
     /* ── Keyboard Shortcuts ─────────────────────── */
     useEffect(() => {
@@ -274,12 +305,12 @@ export default function Game() {
             if (e.key === "Enter" || e.key === " ") {
                 const trimmedInput = input.trim().toLowerCase();
                 const matched = fallingWords.find((w) => w.text === trimmedInput);
-                
+
                 if (!matched && trimmedInput.length > 0) {
                     setIsInputError(true);
                     setTimeout(() => setIsInputError(false), 400);
                 }
-                
+
                 setInput("");
                 if (e.key === " ") e.preventDefault();
             }
@@ -541,6 +572,10 @@ export default function Game() {
                                 </h2>
                                 <div className="space-y-4 mb-10">
                                     <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+                                        <span style={{ color: "var(--matrix-mid)" }}>OPERATOR</span>
+                                        <span style={{ color: "#ffd700" }}>{username}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
                                         <span style={{ color: "var(--matrix-mid)" }}>FINAL_SCORE</span>
                                         <span style={{ color: "var(--matrix-green)" }} className="text-xl">{score}</span>
                                     </div>
@@ -586,6 +621,35 @@ export default function Game() {
                                 >
                                     LOGIN_SYSTEM
                                 </h2>
+
+                                <div className="mb-8 w-full max-w-[280px] mx-auto">
+                                    <p className="text-[10px] mb-2 uppercase tracking-[0.2em]" style={{ color: "var(--matrix-mid)" }}>
+                                        IDENTIFY_YOURSELF:
+                                    </p>
+                                    <div className="relative group">
+                                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-xs opacity-50" style={{ color: "#ffd700" }}>{">"}</div>
+                                        <input
+                                            type="text"
+                                            maxLength={32}
+                                            value={username}
+                                            onChange={(e) => {
+                                                setUsername(e.target.value);
+                                                if (usernameError) setUsernameError(false);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") startGame(tempDifficulty);
+                                            }}
+                                            placeholder="ENTER_ALIAS"
+                                            className={`w-full bg-black/40 border-b px-2 py-3 text-sm tracking-widest uppercase outline-none transition-all duration-300 placeholder:opacity-20 ${usernameError ? 'border-red-500/50 text-red-400' : 'border-white/10 focus:border-yellow-500/50'}`}
+                                            style={{ fontFamily: "var(--font-terminal)", color: "#ffd700" }}
+                                        />
+                                        {usernameError && (
+                                            <p className="absolute -bottom-5 left-0 text-[8px] tracking-widest text-red-500 uppercase">
+                                                // error: identification_required
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <div className="mb-8">
                                     <p className="text-[10px] mb-4 uppercase tracking-[0.2em]" style={{ color: "var(--matrix-mid)" }}>
