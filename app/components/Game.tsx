@@ -83,6 +83,7 @@ export default function Game() {
     const [lives, setLives] = useState(3);
     const [gameStarted, setGameStarted] = useState(false);
     const [gameOver, setGameOver] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
     const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
     const [tempDifficulty, setTempDifficulty] = useState<Difficulty>("medium");
     const [combo, setCombo] = useState(0);
@@ -127,6 +128,7 @@ export default function Game() {
     const goHome = useCallback(() => {
         setGameStarted(false);
         setGameOver(false);
+        setIsPaused(false);
         setDifficulty(null);
         setFallingWords([]);
         setInput("");
@@ -141,9 +143,30 @@ export default function Game() {
         setWarning(null);
     }, []);
 
+    /* ── Abort Session ─────────────────────────── */
+    const abortSession = useCallback(() => {
+        setGameOver(true);
+        setIsPaused(false);
+    }, []);
+
+    /* ── Keyboard Shortcuts ─────────────────────── */
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!gameStarted || gameOver) return;
+            if (e.key === "Escape") {
+                setIsPaused((prev) => !prev);
+            }
+            if (e.shiftKey && (e.key === "Q" || e.key === "q")) {
+                abortSession();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [gameStarted, gameOver, abortSession]);
+
     /* ── Spawn Words ───────────────────────────── */
     useEffect(() => {
-        if (!gameStarted || gameOver) return;
+        if (!gameStarted || gameOver || isPaused) return;
         const interval = setInterval(() => {
             setFallingWords((prev) => [
                 ...prev,
@@ -156,15 +179,15 @@ export default function Game() {
             ]);
         }, spawnInterval);
         return () => clearInterval(interval);
-    }, [gameStarted, gameOver, spawnInterval]);
+    }, [gameStarted, gameOver, isPaused, spawnInterval]);
 
     /* ── Move Words (rAF) ──────────────────────── */
     useEffect(() => {
-        if (!gameStarted || gameOver) return;
+        if (!gameStarted || gameOver || isPaused) return;
         let lastTime = 0;
         let animId: number;
         const tick = (time: number) => {
-            if (gameOverRef.current) return;
+            if (gameOverRef.current || isPaused) return;
             if (lastTime === 0) lastTime = time;
             const delta = (time - lastTime) / 1000;
             lastTime = time;
@@ -175,7 +198,7 @@ export default function Game() {
         };
         animId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(animId);
-    }, [gameStarted, gameOver, fallSpeed]);
+    }, [gameStarted, gameOver, isPaused, fallSpeed]);
 
     /* ── Miss Detection ────────────────────────── */
     useEffect(() => {
@@ -223,7 +246,7 @@ export default function Game() {
     /* ── Typing ────────────────────────────────── */
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (!gameStarted || gameOver) return;
+            if (!gameStarted || gameOver || isPaused) return;
             const value = e.target.value;
             setInput(value);
             const matched = fallingWords.find((w) => w.text === value.toLowerCase().trim());
@@ -241,7 +264,7 @@ export default function Game() {
                 setInput("");
             }
         },
-        [gameStarted, gameOver, fallingWords, combo, spawnParticles]
+        [gameStarted, gameOver, isPaused, fallingWords, combo, spawnParticles]
     );
 
     /* ── Lives Display ─────────────────────────── */
@@ -276,7 +299,7 @@ export default function Game() {
                     textShadow: "0 0 20px rgba(0, 255, 65, 0.4), 0 0 40px rgba(0, 255, 65, 0.15)",
                 }}
             >
-                TYPE_RUSH
+                RUSH.EXE
             </h1>
             <p
                 className="text-xs tracking-[0.5em] uppercase mb-8"
@@ -323,7 +346,37 @@ export default function Game() {
                         {/* Status bar */}
                         <div className="absolute top-4 left-5 right-5 z-20 flex justify-between items-start">
                             <Score score={score} combo={combo} wave={wave} wordsHarvested={wordsHarvested} />
-                            {renderLives()}
+                            <div className="flex flex-col items-end gap-3">
+                                {renderLives()}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setIsPaused(true)}
+                                        title="Pause game (Esc)"
+                                        className="text-[11px] tracking-widest uppercase border px-3 py-1.5 transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/50"
+                                        style={{
+                                            fontFamily: "var(--font-terminal)",
+                                            color: "var(--matrix-warn)",
+                                            borderColor: "rgba(255, 145, 0, 0.4)",
+                                            background: "rgba(255, 145, 0, 0.05)"
+                                        }}
+                                    >
+                                        [ PAUSE_ESC ]
+                                    </button>
+                                    <button
+                                        onClick={abortSession}
+                                        title="Quit session (Shift+Q)"
+                                        className="text-[11px] tracking-widest uppercase border px-3 py-1.5 transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-red-500/50"
+                                        style={{
+                                            fontFamily: "var(--font-terminal)",
+                                            color: "var(--matrix-danger)",
+                                            borderColor: "rgba(255, 23, 68, 0.4)",
+                                            background: "rgba(255, 23, 68, 0.05)"
+                                        }}
+                                    >
+                                        [ ABORT_SHIFT+Q ]
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {fallingWords.map((word) => (
@@ -382,17 +435,37 @@ export default function Game() {
                             </div>
                         )}
 
+                        {/* Pause Overlay */}
+                        {isPaused && (
+                            <div
+                                className="absolute inset-0 z-50 flex flex-col items-center justify-center"
+                                style={{ background: "rgba(0, 0, 0, 0.8)", fontFamily: "var(--font-terminal)" }}
+                            >
+                                <p className="text-[10px] tracking-[0.4em] uppercase mb-1" style={{ color: "var(--matrix-warn)" }}>
+                                    // system_halted
+                                </p>
+                                <h2 className="text-3xl mb-8 uppercase tracking-[0.2em]" style={{ color: "var(--matrix-warn)" }}>PAUSED</h2>
+                                <button
+                                    onClick={() => setIsPaused(false)}
+                                    className="matrix-button py-3 px-10 text-sm uppercase tracking-widest"
+                                >
+                                    [ RESUME_SESSION ]
+                                </button>
+                            </div>
+                        )}
+
                         {/* Input Area */}
                         <div className="absolute bottom-3 left-0 right-0 px-8 z-30">
                             <div className="flex items-center gap-2 max-w-sm mx-auto">
-                                <span className="text-sm font-terminal" style={{ color: "var(--matrix-mid)" }}>{">"}</span>
+                                <span className="text-sm font-terminal" style={{ color: !isPaused ? "var(--matrix-green)" : "var(--matrix-dark)" }}>{">"}</span>
                                 <input
                                     ref={inputRef}
                                     autoFocus
+                                    disabled={isPaused}
                                     value={input}
                                     onChange={handleChange}
-                                    className="matrix-input flex-1 px-4 py-2.5 rounded text-lg text-center"
-                                    placeholder="type here..."
+                                    className={`matrix-input flex-1 px-4 py-2.5 rounded text-lg text-center transition-opacity ${isPaused ? 'opacity-20' : 'opacity-100'}`}
+                                    placeholder={isPaused ? "STANDBY..." : "type here..."}
                                     spellCheck={false}
                                     autoComplete="off"
                                 />
@@ -518,7 +591,7 @@ export default function Game() {
                                     <span className="relative z-10">[ START_GAME ]</span>
                                     <div className="absolute inset-0 bg-green-500/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
                                 </button>
-                                
+
                                 <div className="mt-8 pt-8 border-t border-white/5 space-y-1">
                                     <p className="text-[9px] uppercase tracking-widest opacity-20">
                                         {">"} Type words to harvest data
@@ -542,7 +615,7 @@ export default function Game() {
                     className="text-[10px] uppercase tracking-[0.5em]"
                     style={{ fontFamily: "var(--font-terminal)", color: "var(--matrix-dark)" }}
                 >
-                    type_rush_v2.0.1
+                    rush_exe_v2.0.1
                 </p>
                 <div className="h-0.5 w-32 bg-gradient-to-r from-transparent via-green-500/20 to-transparent" />
             </div>

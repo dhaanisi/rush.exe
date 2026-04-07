@@ -10,7 +10,7 @@ const shareTechMono = Share_Tech_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Type Rush — Enter the Matrix",
+  title: "RUSH.EXE — System Override",
   description: "A cinematic typing game. Type fast, chain combos, survive the rush.",
 };
 
