@@ -1,26 +1,249 @@
 @import "tailwindcss";
 
+/* ══════════════════════════════════════════════════
+   MATRIX — Design System
+   ══════════════════════════════════════════════════ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --matrix-green: #00ff41;
+  --matrix-mid: #008f11;
+  --matrix-dark: #003b00;
+  --matrix-dim: #00590a;
+  --matrix-bright: #39ff14;
+  --matrix-bg: #000000;
+  --matrix-panel: #050505;
+  --matrix-border: #0a2a0a;
+  --matrix-danger: #ff1744;
+  --matrix-warn: #ff9100;
+  --matrix-cyan: #00e5ff;
+  --font-terminal: var(--font-mono), "Courier New", monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-matrix: var(--matrix-green);
+  --color-matrix-mid: var(--matrix-mid);
+  --color-matrix-dark: var(--matrix-dark);
+  --color-matrix-bright: var(--matrix-bright);
+  --color-matrix-panel: var(--matrix-panel);
+  --color-matrix-border: var(--matrix-border);
+  --color-danger: var(--matrix-danger);
+  --color-warn: var(--matrix-warn);
+  --color-cyan: var(--matrix-cyan);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--matrix-bg);
+  color: var(--matrix-green);
+  font-family: var(--font-terminal);
+  margin: 0;
+  overflow: hidden;
 }
+
+/* ── Scanline Overlay ──────────────────────────── */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+}
+
+/* ── CRT Vignette ──────────────────────────────── */
+.crt-vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+}
+
+/* ── Digital Rain Column ───────────────────────── */
+@keyframes rain-fall {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.rain-column {
+  position: absolute;
+  top: 0;
+  font-family: var(--font-terminal);
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--matrix-dark);
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+  pointer-events: none;
+  opacity: 0.15;
+  animation: rain-fall linear infinite;
+  letter-spacing: 4px;
+}
+
+/* ── Glow Pulse ────────────────────────────────── */
+@keyframes glow-pulse {
+  0%, 100% { text-shadow: 0 0 5px rgba(0, 255, 65, 0.4); }
+  50% { text-shadow: 0 0 15px rgba(0, 255, 65, 0.8), 0 0 30px rgba(0, 255, 65, 0.3); }
+}
+
+/* ── Score Pop Animation ───────────────────────── */
+@keyframes score-pop {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-40px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70px) scale(0.8);
+  }
+}
+
+.score-pop {
+  animation: score-pop 1s ease-out forwards;
+  font-family: var(--font-terminal);
+  color: var(--matrix-bright);
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+}
+
+/* ── Particle Burst ────────────────────────────── */
+@keyframes particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(0);
+  }
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--matrix-green);
+  box-shadow: 0 0 6px var(--matrix-green);
+  animation: particle-burst 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ── Warning Flash ─────────────────────────────── */
+@keyframes warning-flash {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.8); }
+  10% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  20% { opacity: 0.8; }
+  30% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.95); }
+}
+
+.system-warning {
+  animation: warning-flash 2s ease-out forwards;
+}
+
+/* ── Danger Pulse ──────────────────────────────── */
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 23, 68, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(255, 23, 68, 0.7); }
+}
+
+/* ── Border Glow ───────────────────────────────── */
+.border-glow {
+  border: 1px solid rgba(0, 255, 65, 0.15);
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.03), inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Matrix Input ──────────────────────────────── */
+.matrix-input {
+  background: rgba(0, 15, 0, 0.8);
+  border: 1px solid rgba(0, 255, 65, 0.25);
+  color: var(--matrix-green);
+  font-family: var(--font-terminal);
+  letter-spacing: 0.15em;
+  caret-color: var(--matrix-green);
+  transition: all 0.3s ease;
+}
+
+.matrix-input:focus {
+  border-color: var(--matrix-green);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.15), inset 0 0 10px rgba(0, 255, 65, 0.03);
+  outline: none;
+}
+
+.matrix-input::placeholder {
+  color: rgba(0, 255, 65, 0.2);
+}
+
+/* ── Matrix Button ─────────────────────────────── */
+.matrix-button {
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--matrix-green);
+  color: var(--matrix-green);
+  font-family: var(--font-terminal);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.matrix-button:hover {
+  background: rgba(0, 255, 65, 0.1);
+  box-shadow: 0 0 25px rgba(0, 255, 65, 0.2), inset 0 0 25px rgba(0, 255, 65, 0.05);
+  transform: scale(1.03);
+}
+
+.matrix-button:active {
+  transform: scale(0.97);
+  background: rgba(0, 255, 65, 0.15);
+}
+
+/* ── Combo Flash ───────────────────────────────── */
+@keyframes combo-flash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); text-shadow: 0 0 20px rgba(0, 255, 65, 1); }
+  100% { transform: scale(1); }
+}
+
+.combo-flash {
+  animation: combo-flash 0.3s ease-out;
+}
+
+/* ── Cursor Blink ──────────────────────────────── */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* ── Corner Brackets ───────────────────────────── */
+.corner-bracket {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.corner-bracket--tl { top: 8px; left: 8px; border-top: 1px solid var(--matrix-green); border-left: 1px solid var(--matrix-green); }
+.corner-bracket--tr { top: 8px; right: 8px; border-top: 1px solid var(--matrix-green); border-right: 1px solid var(--matrix-green); }
+.corner-bracket--bl { bottom: 8px; left: 8px; border-bottom: 1px solid var(--matrix-green); border-left: 1px solid var(--matrix-green); }
+.corner-bracket--br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--matrix-green); border-right: 1px solid var(--matrix-green); }
