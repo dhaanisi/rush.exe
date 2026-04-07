@@ -39,7 +39,7 @@ Securely report your mission results to the global grid. Compete against other o
 ### 1. CLONE_INTERFACE
 ```bash
 git clone https://github.com/dhaanisi/rush.exe.git
-cd type-rush
+cd rush.exe
 ```
 
 ### 2. INITIALIZE_DEPENDENCIES
