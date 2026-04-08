@@ -680,7 +680,7 @@ export default function Game() {
 
                                     <button
                                         onClick={goHome}
-                                        className="matrix-button py-2 px-6 text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 mt-2"
+                                        className="matrix-button py-2 px-6 text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 -mt-1"
                                     >
                                         [ BACK_TO_HOME ]
                                     </button>
